@@ -1,6 +1,7 @@
-##############################################################################################################################################################################
+# Task One
+
 The Special Item should be the only item which shows in this category - create a feature that will show the product's second image when it is hovered on.
-##############################################################################################################################################################################
+#######################################################################################
 This was implemented by doing a loop of the images found within the product, whatsoever, I had to limit it to 2 images only and then made sure the second image was to be shown on hovering by making sure the `index` was greater than `0`. This is the code used:
 
 ```handlebars
@@ -23,11 +24,12 @@ This was implemented by doing a loop of the images found within the product, wha
 The code above is found on the components/products/card.html file starting on line 99 (Just below the responsive-image component).
 I did style it as well; the css is on the top of the card.html. I usually put the css externally in its own css document but since this was a test, I did not mind to put it here.
 
-##############################################################################################################################################################################
+# Task Two
+
 Add a button at the top of the category page labeled Add All To Cart. When clicked, the product will be added to the cart. Notify the user that the product has been added.
 If the cart has an item in it - show a button next to the Add All To Cart button which says Remove All Items. When clicked it should clear the cart and notify the user.
 Both buttons should utilize the Storefront API for completion.
-##############################################################################################################################################################################
+#######################################################################################
 As requested, two buttons have been implemented and each one calls their corresponding functions, `createCart()` and `deleteCart()`. Here it is the code for the buttons:
 
 NOTE: I had to inspect(F12) the buttons via the customize theme page in the admin dashboard to find the proper class to use.
@@ -43,7 +45,7 @@ NOTE: I had to inspect(F12) the buttons via the customize theme page in the admi
 
 Now the funny part is the JS section, the requirements were to have said buttons on the top of the category page, which made me think that I need to grab all(array) the product IDs found on the webpage so I could add them to the cart in a single click. It was a funny task(not going to lie); I will explain the work in the code:
 
-### Create cart
+###### Create cart
 
 ```js
 // I started by creating an empty array that will contain our items.
@@ -99,7 +101,7 @@ const createCart = async () => {
 };
 ```
 
-### Delete cart
+###### Delete cart
 
 ```js
 // This is the reason, I decided to store the id after creating a cart.
@@ -131,7 +133,7 @@ const deleteCart = async () => {
 };
 ```
 
-### Create and Delete cart (full code)
+###### Create and Delete cart (full code)
 
 ```js
 let cartId = localStorage.getItem("cartId");
@@ -192,9 +194,10 @@ const deleteCart = async () => {
 };
 ```
 
-##############################################################################################################################################################################
+# Task Three (Bonus)
+
 If a customer is logged in - at the top of the category page show a banner that shows some customer details (i.e. name, email, phone, etc). This should utilize the data that is rendered via Handlebars on the Customer Object.
-##############################################################################################################################################################################
+#######################################################################################
 
 We go back to the category page on line 51. We display the component only if there's an active/loggedIn user.
 
