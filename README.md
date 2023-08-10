@@ -1,146 +1,224 @@
-# Cornerstone
-![tests](https://github.com/bigcommerce/cornerstone/workflows/Theme%20Bundling%20Test/badge.svg?branch=master)
+##############################################################################################################################################################################
+The Special Item should be the only item which shows in this category - create a feature that will show the product's second image when it is hovered on.
+##############################################################################################################################################################################
+This was implemented by doing a loop of the images found within the product, whatsoever, I had to limit it to 2 images only and then made sure the second image was to be shown on hovering by making sure the `index` was greater than `0`. This is the code used:
 
-Stencil's Cornerstone theme is the building block for BigCommerce theme developers to get started quickly developing premium quality themes on the BigCommerce platform.
-
-### Stencil Utils
-[Stencil-utils](https://github.com/bigcommerce/stencil-utils) is our supporting library for our events and remote interactions.
-
-## JS API
-When writing theme JavaScript (JS) there is an API in place for running JS on a per page basis. To properly write JS for your theme, the following page types are available to you:
-
-* "pages/account/addresses"
-* "pages/account/add-address"
-* "pages/account/add-return"
-* "pages/account/add-wishlist"
-* "pages/account/recent-items"
-* "pages/account/download-item"
-* "pages/account/edit"
-* "pages/account/return-saved"
-* "pages/account/returns"
-* "pages/account/payment-methods"
-* "pages/auth/login"
-* "pages/auth/account-created"
-* "pages/auth/create-account"
-* "pages/auth/new-password"
-* "pages/blog"
-* "pages/blog-post"
-* "pages/brand"
-* "pages/brands"
-* "pages/cart"
-* "pages/category"
-* "pages/compare"
-* "pages/errors"
-* "pages/gift-certificate/purchase"
-* "pages/gift-certificate/balance"
-* "pages/gift-certificate/redeem"
-* "global"
-* "pages/home"
-* "pages/order-complete"
-* "pages/page"
-* "pages/product"
-* "pages/search"
-* "pages/sitemap"
-* "pages/subscribed"
-* "pages/account/wishlist-details"
-* "pages/account/wishlists"
-
-These page types will correspond to the pages within your theme. Each one of these page types map to an ES6 module that extends the base `PageManager` abstract class.
-
-```javascript
-    export default class Auth extends PageManager {
-        constructor() {
-            // Set up code goes here; attach to internals and use internals as you would 'this'
-        }
-    }
+```handlebars
+{{#each (limit images 2)}}
+	{{#if @index ">" 0}}
+		<img
+			src="{{getImage
+				this
+				'productgallery_size'
+				(cdn theme_settings.default_image_product)
+			}}"
+			class="card-image"
+			alt="{{this.alt}}"
+			title="{{this.alt}}"
+		/>
+	{{/if}}
+{{/each}}
 ```
 
-### JS Template Context Injection
-Occasionally you may need to use dynamic data from the template context within your client-side theme application code.
+The code above is found on the components/products/card.html file starting on line 99 (Just below the responsive-image component).
+I did style it as well; the css is on the top of the card.html. I usually put the css externally in its own css document but since this was a test, I did not mind to put it here.
 
-Two helpers are provided to help achieve this.
+##############################################################################################################################################################################
+Add a button at the top of the category page labeled Add All To Cart. When clicked, the product will be added to the cart. Notify the user that the product has been added.
+If the cart has an item in it - show a button next to the Add All To Cart button which says Remove All Items. When clicked it should clear the cart and notify the user.
+Both buttons should utilize the Storefront API for completion.
+##############################################################################################################################################################################
+As requested, two buttons have been implemented and each one calls their corresponding functions, `createCart()` and `deleteCart()`. Here it is the code for the buttons:
 
-The inject helper allows you to compose a JSON object with a subset of the template context to be sent to the browser.
-
-```
-{{inject "stringBasedKey" contextValue}}
-```
-
-To retrieve the parsable JSON object, just call `{{jsContext}}` after all of the `{{@inject}}` calls.
-
-For example, to setup the product name in your client-side app, you can do the following if you're in the context of a product:
+NOTE: I had to inspect(F12) the buttons via the customize theme page in the admin dashboard to find the proper class to use.
 
 ```html
-{{inject "myProductName" product.title}}
-
-<script>
-// Note the lack of quotes around the jsContext handlebars helper, it becomes a string automatically.
-var jsContext = JSON.parse({{jsContext}}); // jsContext would output "{\"myProductName\": \"Sample Product\"}" which can feed directly into your JavaScript
-
-console.log(jsContext.myProductName); // Will output: Sample Product
-</script>
+<button onclick="createCart()" class="button button--primary" type="button">
+	Add
+</button>
+<button onclick="deleteCart()" class="button button--primary" type="button">
+	Remove
+</button>
 ```
 
-You can compose your JSON object across multiple pages to create a different set of client-side data depending on the currently loaded template context.
+Now the funny part is the JS section, the requirements were to have said buttons on the top of the category page, which made me think that I need to grab all(array) the product IDs found on the webpage so I could add them to the cart in a single click. It was a funny task(not going to lie); I will explain the work in the code:
 
-The stencil theme makes the jsContext available on both the active page scoped and global PageManager objects as `this.context`.
+### Create cart
 
-## Polyfilling via Feature Detection
-Cornerstone implements [this strategy](https://philipwalton.com/articles/loading-polyfills-only-when-needed/) for polyfilling.
+```js
+// I started by creating an empty array that will contain our items.
+let itemsArrayInCurrentPage = [];
 
-In `templates/components/common/polyfill-script.html` there is a simple feature detection script which can be extended to detect any recent JS features you intend to use in your theme code.
+// In order to grab the IDs, I needed to find something in common in the divs of the products and this one caught my interest
+// and as soon as I found out that the values matched the  IDs from admin dashboard I went ahead and used it.
+const itemIds = document.querySelectorAll("[data-entity-id]");
 
-If any one of the conditions is not met, an additional blocking JS bundle configured in `assets/js/polyfills.js` will be loaded to polyfill modern JS features before the main bundle executes. 
+// Once I had the divs, I went and created a loop to iterate through the elements and find the ids which were found within the
+// dataset object.
+itemIds.forEach((item) => {
+	itemsArrayInCurrentPage.push(item.dataset.entityId);
+});
 
-This intentionally prioritizes the experience of the 90%+ of shoppers who are on modern browsers in terms of performance, while maintaining compatibility (at the expense of additional JS download+parse for the polyfills) for users on legacy browsers.
+/*
+ * By this point we should have all  the IDs needed(and stored in memory) if we console.log(itemsArrayInCurrentPage) it.
+ */
 
-## Static assets
-Some static assets in the Stencil theme are handled with Grunt if required. This
-means you have some dependencies on grunt and npm. To get started:
+const createCart = async () => {
+	// We run through them and return the ids.
+	const lineItems = itemsArrayInCurrentPage.map((id) => ({
+		quantity: 1, // I assumed having 0 would not work and Docs said the quantity param was required for the API endpoint also.
+		productId: id, // This is the ID
+	}));
 
-First make sure you have Grunt installed globally on your machine:
+	const options = {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({ lineItems, locale: "en" }), // Just making sure to JSON format it
+	};
 
+	// We make a POST request to my store endpoint
+	await fetch(
+		`https://demostore-h10.mybigcommerce.com/api/storefront/carts`,
+		options
+	)
+		.then((response) => response.json())
+		.then((response) => {
+			// I throw an alert to the user's device and tell them the products have been added to the cart
+			alert("Items added to cart");
+
+			// I store the recently created cartId in local storage in order to be used when reloading the page and
+			// deleting the corresponding cart
+			localStorage.setItem("cartId", response.id);
+
+			// Reload the page
+			location.reload();
+		})
+		.catch((err) => console.error(err));
+};
 ```
-npm install -g grunt-cli
+
+### Delete cart
+
+```js
+// This is the reason, I decided to store the id after creating a cart.
+let cartId = localStorage.getItem("cartId"); // This is the first thing that came up to my head to delete the correct cart
+
+const deleteCart = async () => {
+	const options = {
+		method: "DELETE",
+		headers: {
+			"Content-Type": "application/json",
+		},
+	};
+
+	// We pass the cartId variable as a parameter in the HTTP request and then proceed to the next step, the data returned.
+	await fetch(
+		`https://demostore-h10.mybigcommerce.com/api/storefront/carts/${cartId}`,
+		options
+	)
+		.then((response) => response.json())
+		.then((response) => {
+			// I let the user know his/her car has been cleared out
+			alert("Cart has been cleared");
+			//  I delete the cartId from local storage to avoid incongruencies when creating new ones
+			localStorage.removeItem("cartId");
+			// Reload  the page
+			location.reload();
+		})
+		.catch((err) => console.error(err));
+};
 ```
 
-and run:
+### Create and Delete cart (full code)
 
+```js
+let cartId = localStorage.getItem("cartId");
+let itemsArrayInCurrentPage = [];
+
+const itemIds = document.querySelectorAll("[data-entity-id]");
+
+itemIds.forEach((item) => {
+	itemsArrayInCurrentPage.push(item.dataset.entityId);
+});
+
+const createCart = async () => {
+	const lineItems = itemsArrayInCurrentPage.map((id) => ({
+		quantity: 1,
+		productId: id,
+	}));
+
+	const options = {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({ lineItems, locale: "en" }),
+	};
+
+	await fetch(
+		`https://demostore-h10.mybigcommerce.com/api/storefront/carts`,
+		options
+	)
+		.then((response) => response.json())
+		.then((response) => {
+			alert("Items added to cart");
+			localStorage.setItem("cartId", response.id);
+			location.reload();
+		})
+		.catch((err) => console.error(err));
+};
+
+const deleteCart = async () => {
+	const options = {
+		method: "DELETE",
+		headers: {
+			"Content-Type": "application/json",
+		},
+	};
+
+	await fetch(
+		`https://demostore-h10.mybigcommerce.com/api/storefront/carts/${cartId}`,
+		options
+	)
+		.then((response) => response.json())
+		.then((response) => {
+			alert("Cart has been cleared");
+			localStorage.removeItem("cartId");
+			location.reload();
+		})
+		.catch((err) => console.error(err));
+};
 ```
-npm install
+
+##############################################################################################################################################################################
+If a customer is logged in - at the top of the category page show a banner that shows some customer details (i.e. name, email, phone, etc). This should utilize the data that is rendered via Handlebars on the Customer Object.
+##############################################################################################################################################################################
+
+We go back to the category page on line 51. We display the component only if there's an active/loggedIn user.
+
+```handlebars
+{{#if customer}}
+    {{> components/account/account-banner}}
+{{/if}}
 ```
 
-Note: package-lock.json file was generated by Node version 10 and npm version 6.11.3. The app supports Node 10 as well as multiple versions of npm, but we should always use those versions when updating package-lock.json, unless it is decided to upgrade those, and in this case the readme should be updated as well. If using a different version for node OR npm, please delete the package-lock.json file prior to installing node packages and also prior to pushing to github.
+and this is the account-banner component with some css as well:
 
-If updating or adding a dependency, please double check that you are working on Node version 10 and npm version 6.11.3 and run ```npm update <package_name>```  or ```npm install <package_name>``` (avoid running npm install for updating a package). After updating the package, please make sure that the changes in the package-lock.json reflect only the updated/new package prior to pushing the changes to github.
-
-
-### Icons
-Icons are delivered via a single SVG sprite, which is embedded on the page in
-`templates/layout/base.html`. It is generated via a grunt task `grunt svgstore`.
-
-The task takes individual SVG files for each icon in `assets/icons` and bundles
-them together, to be inlined on the top of the theme, via an ajax call managed
-by svg-injector. Each icon can then be called in a similar way to an inline image via:
-
+```handlebars
+<style>
+	.myBanner { border-radius: 5px; border: 1px solid #444444; padding: 3rem;
+	margin-bottom: 1.5rem !important; } .myBanner-container { width: 100%;
+	padding-top: 3rem!important; padding-bottom: 3rem!important; } .myBanner-title
+	{ font-size: 3rem; font-weight: 700; } .myBanner-description { font-size:
+	1.5rem; }
+</style>
+<div class="myBanner">
+	<div class="myBanner-container">
+		<h1 class="myBanner-title">{{customer.name}}</h1>
+		<p class="myBanner-description">{{customer.email}}</p>
+		<p class="myBanner-description">{{customer.phone}}</p>
+	</div>
+</div>
 ```
-<svg><use xlink:href="#icon-svgFileName" /></svg>
-```
-
-The ID of the SVG icon you are calling is based on the filename of the icon you want,
-with `icon-` prepended. e.g. `xlink:href="#icon-facebook"`.
-
-Simply add your new icon SVG file to the icons folder, and run `grunt svgstore`,
-or just `grunt`.
-
-#### License
-
-(The MIT License)
-Copyright (C) 2015-present BigCommerce Inc.
-All rights reserved.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
