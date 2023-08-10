@@ -1,0 +1,27 @@
+<style>
+    .myBanner {
+        border-radius: 5px;
+        border: 1px solid #444444;
+        padding: 3rem;
+        margin-bottom: 1.5rem !important;
+    }
+    .myBanner-container {
+        width: 100%;
+        padding-top: 3rem!important;
+        padding-bottom: 3rem!important;
+    }
+    .myBanner-title {
+        font-size: 3rem;
+        font-weight: 700;
+    }
+    .myBanner-description {
+        font-size: 1.5rem;
+    }
+</style>
+<div class="myBanner">
+    <div class="myBanner-container">
+        <h1 class="myBanner-title">{{customer.name}}</h1>
+        <p class="myBanner-description">{{customer.email}}</p>
+        <p class="myBanner-description">{{customer.phone}}</p>
+    </div>
+</div>
